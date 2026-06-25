@@ -1,22 +1,44 @@
-#pragma once
+#include "../include/memory_manager.h"
 
-#include <cuda_runtime.h>
-
-class MemoryManager
+float* MemoryManager::allocateFloatArray(int size)
 {
-public:
+    float* ptr = nullptr;
 
-    static float* allocateFloatArray(int size);
+    cudaMalloc(
+        (void**)&ptr,
+        size * sizeof(float));
 
-    static void freeMemory(float* ptr);
+    return ptr;
+}
 
-    static void copyToGPU(
-        float* gpu_ptr,
-        float* cpu_ptr,
-        int size);
+void MemoryManager::freeMemory(float* ptr)
+{
+    if(ptr != nullptr)
+    {
+        cudaFree(ptr);
+    }
+}
 
-    static void copyToCPU(
-        float* cpu_ptr,
-        float* gpu_ptr,
-        int size);
-};
+void MemoryManager::copyToGPU(
+    float* gpu_ptr,
+    float* cpu_ptr,
+    int size)
+{
+    cudaMemcpy(
+        gpu_ptr,
+        cpu_ptr,
+        size * sizeof(float),
+        cudaMemcpyHostToDevice);
+}
+
+void MemoryManager::copyToCPU(
+    float* cpu_ptr,
+    float* gpu_ptr,
+    int size)
+{
+    cudaMemcpy(
+        cpu_ptr,
+        gpu_ptr,
+        size * sizeof(float),
+        cudaMemcpyDeviceToHost);
+}
