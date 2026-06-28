@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include "../include/test_kernel.h"
 #include "../include/config.h"
 #include "../include/camera_manager.h"
 #include "../include/memory_manager.h"
@@ -26,6 +26,10 @@ int main()
         gpu_data,
         cpu_data,
         SIZE);
+
+    launchMultiplyByTwo(
+    gpu_data,
+    SIZE);
 
     float cpu_result[SIZE];
 
