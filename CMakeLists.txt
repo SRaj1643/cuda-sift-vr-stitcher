@@ -6,9 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_ARCHITECTURES native)
 
 # Include headers
-include_directories(${PROJECT_SOURCE_DIR}/include)
+target_include_directories(cuda_sift PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
 
 # Automatically find every source file
 file(GLOB_RECURSE PROJECT_SOURCES
@@ -26,4 +29,7 @@ add_executable(cuda_sift
 # Enable separable compilation
 set_target_properties(cuda_sift PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
+)
+target_compile_options(cuda_sift PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra>
 )
