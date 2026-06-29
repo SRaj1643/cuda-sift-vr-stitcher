@@ -1,8 +1,8 @@
 #include "gaussian.h"
 
+#include <opencv2/core/cuda.hpp>
 #include <opencv2/cudafilters.hpp>
 #include <opencv2/cudawarping.hpp>
-#include <opencv2/core/cuda.hpp>
 
 const float SIGMAS[NUM_SCALES] =
 {
@@ -17,36 +17,42 @@ const float SIGMAS[NUM_SCALES] =
 };
 
 std::vector<std::vector<cv::Mat>>
-buildGaussianPyramidCUDA(
-    const cv::Mat& image
-)
+buildGaussianPyramidCUDA(const cv::Mat& image)
 {
     std::vector<std::vector<cv::Mat>> pyramid;
 
+    // Convert CPU image to float
+    cv::Mat floatImage;
+    image.convertTo(floatImage, CV_32F);
+
+    // Upload once
     cv::cuda::GpuMat currentGPU;
+    currentGPU.upload(floatImage);
 
-    image.convertTo(
-        currentGPU,
-        CV_32F
-    );
+    // Create Gaussian filters ONCE
+    std::vector<cv::Ptr<cv::cuda::Filter>> gaussianFilters;
 
-    for(int octave=0; octave<NUM_OCTAVES; octave++)
+    for(int i = 0; i < NUM_SCALES; i++)
+    {
+        gaussianFilters.push_back(
+            cv::cuda::createGaussianFilter(
+                CV_32F,
+                CV_32F,
+                cv::Size(0,0),
+                SIGMAS[i]
+            )
+        );
+    }
+
+    for(int octave = 0; octave < NUM_OCTAVES; octave++)
     {
         std::vector<cv::Mat> octaveImages;
 
-        for(int s=0; s<NUM_SCALES; s++)
+        for(int scale = 0; scale < NUM_SCALES; scale++)
         {
             cv::cuda::GpuMat blurredGPU;
 
-            auto gaussian =
-                cv::cuda::createGaussianFilter(
-                    CV_32F,
-                    CV_32F,
-                    cv::Size(0,0),
-                    SIGMAS[s]
-                );
-
-            gaussian->apply(
+            gaussianFilters[scale]->apply(
                 currentGPU,
                 blurredGPU
             );
@@ -60,21 +66,24 @@ buildGaussianPyramidCUDA(
 
         pyramid.push_back(octaveImages);
 
-        cv::cuda::GpuMat nextGPU;
+        if(octave != NUM_OCTAVES - 1)
+        {
+            cv::cuda::GpuMat nextGPU;
 
-        cv::cuda::resize(
-            currentGPU,
-            nextGPU,
-            cv::Size(
-                currentGPU.cols/2,
-                currentGPU.rows/2
-            ),
-            0,
-            0,
-            cv::INTER_AREA
-        );
+            cv::cuda::resize(
+                currentGPU,
+                nextGPU,
+                cv::Size(
+                    currentGPU.cols / 2,
+                    currentGPU.rows / 2
+                ),
+                0,
+                0,
+                cv::INTER_AREA
+            );
 
-        currentGPU = nextGPU;
+            currentGPU = nextGPU;
+        }
     }
 
     return pyramid;
