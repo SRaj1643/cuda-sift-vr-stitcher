@@ -6,23 +6,25 @@ class MemoryManager
 {
 public:
 
-    static float* allocateFloatArray(int size);
+    static float*
+    allocateFloatArray(size_t size);
 
-    static unsigned char* allocateByteArray(int size);
+    static void
+    freeMemory(void* ptr);
 
-    static int* allocateIntArray(int size);
-
-    static void freeMemory(void* ptr);
-
-    static void copyToGPU(
-        void* gpu_ptr,
-        const void* cpu_ptr,
+    static void
+    copyToGPU(
+        void* gpu,
+        const void* cpu,
         size_t bytes);
 
-    static void copyToCPU(
-        void* cpu_ptr,
-        const void* gpu_ptr,
+    static void
+    copyToCPU(
+        void* cpu,
+        const void* gpu,
         size_t bytes);
 
-    static void deviceSynchronize();
+    static void
+    synchronize();
+
 };
