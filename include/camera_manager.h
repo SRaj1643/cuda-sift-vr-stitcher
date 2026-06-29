@@ -1,16 +1,20 @@
 #pragma once
 
-#include "camera.h"
-#include "config.h"
+#include <vector>
+#include <string>
 
-struct CameraManager
+#define MAX_CAMERAS 6
+
+class CameraManager
 {
-    int active_cameras;
+public:
 
-    CameraData cameras[MAX_CAMERAS];
+    int active_cameras = 2;
+
+    std::vector<std::string> image_paths;
 
     CameraManager()
     {
-        active_cameras = 0;
+        image_paths.resize(MAX_CAMERAS);
     }
 };
