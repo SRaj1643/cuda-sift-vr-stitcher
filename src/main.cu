@@ -51,13 +51,11 @@ int main()
     MemoryManager::freeMemory(gpu_data);
     std::vector<float*> gaussian_pyramid;
 
-    buildGaussianPyramid(
+   gaussianBlur(
+        nullptr,
         nullptr,
         0,
-        0,
-        4,
-        8,
-        gaussian_pyramid
+        0
     );
 
     return 0;
