@@ -56,11 +56,12 @@ int main()
     // (Currently Copy Kernel)
     // --------------------------------------------------
 
-    gaussianBlur(
+    gaussianBlurCUDA(
         gpu_input,
         gpu_output,
         WIDTH,
-        HEIGHT
+        HEIGHT,
+        1.6f
     );
 
     // --------------------------------------------------
