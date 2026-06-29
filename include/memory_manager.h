@@ -8,15 +8,21 @@ public:
 
     static float* allocateFloatArray(int size);
 
-    static void freeMemory(float* ptr);
+    static unsigned char* allocateByteArray(int size);
+
+    static int* allocateIntArray(int size);
+
+    static void freeMemory(void* ptr);
 
     static void copyToGPU(
-        float* gpu_ptr,
-        float* cpu_ptr,
-        int size);
+        void* gpu_ptr,
+        const void* cpu_ptr,
+        size_t bytes);
 
     static void copyToCPU(
-        float* cpu_ptr,
-        float* gpu_ptr,
-        int size);
+        void* cpu_ptr,
+        const void* gpu_ptr,
+        size_t bytes);
+
+    static void deviceSynchronize();
 };
