@@ -2,41 +2,42 @@
 
 #include <cuda_runtime.h>
 
-__constant__ float d_kernel[MAX_KERNEL_SIZE * MAX_KERNEL_SIZE];
+#define BLOCK_SIZE 16
+#define MAX_KERNEL_SIZE 31
+#define MAX_RADIUS 15
 
+//-----------------------------------------------------
+// Constant Memory
+//-----------------------------------------------------
+
+__constant__ float d_kernel[MAX_KERNEL_SIZE * MAX_KERNEL_SIZE];
 __constant__ int d_kernelSize;
 
-#define BLOCK_SIZE 16
-
-//---------------------------------------------------
+//-----------------------------------------------------
 // Upload Gaussian Kernel
-//---------------------------------------------------
+//-----------------------------------------------------
 
 void uploadGaussianKernel(
     const float* kernel,
-    int kernelSize
-)
+    int kernelSize)
 {
     cudaMemcpyToSymbol(
         d_kernel,
         kernel,
-        kernelSize * kernelSize * sizeof(float)
-    );
+        kernelSize * kernelSize * sizeof(float));
 
     cudaMemcpyToSymbol(
         d_kernelSize,
         &kernelSize,
-        sizeof(int)
-    );
+        sizeof(int));
 }
 
-//---------------------------------------------------
-// CUDA Kernel
-//---------------------------------------------------
+//-----------------------------------------------------
+// Shared Memory Gaussian
+//-----------------------------------------------------
 
 __global__
-
-void gaussianKernel(
+void gaussianKernelShared(
 
     const float* input,
 
@@ -44,74 +45,110 @@ void gaussianKernel(
 
     int width,
 
-    int height
+    int height)
 
-)
 {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int radius = d_kernelSize / 2;
 
-    if(x >= width || y >= height)
+    const int TILE = BLOCK_SIZE + 2 * MAX_RADIUS;
+
+    __shared__ float tile[TILE][TILE];
+
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
+
+    int x = blockIdx.x * BLOCK_SIZE + tx;
+    int y = blockIdx.y * BLOCK_SIZE + ty;
+
+    //-------------------------------------------------
+    // Load Center Pixel
+    //-------------------------------------------------
+
+    int lx = tx + radius;
+    int ly = ty + radius;
+
+    if(x < width && y < height)
+        tile[ly][lx] = input[y * width + x];
+    else
+        tile[ly][lx] = 0.0f;
+
+    //-------------------------------------------------
+    // Halo Loading
+    //-------------------------------------------------
+
+    if(tx < radius)
+    {
+        int xx = max(x - radius,0);
+
+        tile[ly][tx] =
+            input[y * width + xx];
+    }
+
+    if(tx >= BLOCK_SIZE-radius)
+    {
+        int xx =
+            min(
+                x+radius,
+                width-1);
+
+        tile[ly][tx+2*radius] =
+            input[y*width+xx];
+    }
+
+    if(ty < radius)
+    {
+        int yy=max(y-radius,0);
+
+        tile[ty][lx] =
+            input[yy*width+x];
+    }
+
+    if(ty>=BLOCK_SIZE-radius)
+    {
+        int yy=
+            min(
+                y+radius,
+                height-1);
+
+        tile[ty+2*radius][lx]=
+            input[yy*width+x];
+    }
+
+    __syncthreads();
+
+    //-------------------------------------------------
+    // Convolution
+    //-------------------------------------------------
+
+    if(x>=width||y>=height)
         return;
 
-    float sum = 0.0f;
+    float sum=0.0f;
 
-    int radius = d_kernelSize / 2;
-
-    for(int ky=-radius; ky<=radius; ky++)
+    for(int ky=-radius;ky<=radius;ky++)
     {
-        for(int kx=-radius; kx<=radius; kx++)
+        for(int kx=-radius;kx<=radius;kx++)
         {
-            int xx = min(max(x+kx,0),width-1);
+            float pixel=
+                tile[
+                    ly+ky
+                ][
+                    lx+kx
+                ];
 
-            int yy = min(max(y+ky,0),height-1);
+            float weight=
+                d_kernel[
+                    (ky+radius)*d_kernelSize
+                    +(kx+radius)
+                ];
 
-            float pixel =
-                input[yy*width+xx];
-
-            float weight =
-                d_kernel[(ky+radius)*d_kernelSize + (kx+radius)];
-
-            sum += pixel*weight;
+            sum+=pixel*weight;
         }
     }
 
-    output[y*width+x] = sum;
-}
+    output[
+        y*width+x
+    ]=sum;
 
-//---------------------------------------------------
-// Launcher
-//---------------------------------------------------
-
-void gaussianConvolution(
-
-    const float* d_input,
-
-    float* d_output,
-
-    int width,
-
-    int height,
-
-    int kernelSize
-
-)
-{
-    dim3 block(BLOCK_SIZE,BLOCK_SIZE);
-
-    dim3 grid(
-
-        (width+BLOCK_SIZE-1)/BLOCK_SIZE,
-
-        (height+BLOCK_SIZE-1)/BLOCK_SIZE
-
-    );
-
-    gaussianKernel<<<grid,block>>>(
-        d_input,
-        d_output,
-        width,
-        height
-    );
 }
