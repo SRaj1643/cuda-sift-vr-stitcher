@@ -1,8 +1,8 @@
 #include <iostream>
-#include "../include/test_kernel.h"
-#include "../include/config.h"
-#include "../include/camera_manager.h"
-#include "../include/memory_manager.h"
+#include "config.h"
+#include "camera_manager.h"
+#include "memory_manager.h"
+#include "test_kernel.h"
 
 int main()
 {
