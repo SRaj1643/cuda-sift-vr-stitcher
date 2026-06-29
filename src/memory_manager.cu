@@ -1,4 +1,4 @@
-#include "../include/memory_manager.h"
+#include "memory_manager.h"
 
 float* MemoryManager::allocateFloatArray(int size)
 {
