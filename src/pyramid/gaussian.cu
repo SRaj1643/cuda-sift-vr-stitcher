@@ -1,6 +1,7 @@
 #include "gaussian.h"
 
 #include <cuda_runtime.h>
+#include <cmath>
 #include <iostream>
 
 __global__
@@ -17,16 +18,17 @@ void gaussianKernel(
     if(x >= width || y >= height)
         return;
 
-    int index = y * width + x;
+    int idx = y * width + x;
 
-    output[index] = input[index];
+    output[idx] = input[idx];
 }
 
-void gaussianBlur(
-    const float* input_image,
-    float* output_image,
+void gaussianBlurCUDA(
+    const float* input,
+    float* output,
     int width,
-    int height)
+    int height,
+    float sigma)
 {
     dim3 blockSize(16,16);
 
@@ -35,14 +37,12 @@ void gaussianBlur(
         (height + blockSize.y - 1) / blockSize.y
     );
 
-    gaussianKernel<<<gridSize, blockSize>>>(
-        input_image,
-        output_image,
+    gaussianKernel<<<gridSize,blockSize>>>(
+        input,
+        output,
         width,
         height
     );
 
     cudaDeviceSynchronize();
-
-    std::cout << "Gaussian Copy Kernel Executed" << std::endl;
 }
