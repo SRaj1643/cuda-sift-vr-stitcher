@@ -1,68 +1,54 @@
 #include "memory_manager.h"
 
-float* MemoryManager::allocateFloatArray(int size)
+float*
+MemoryManager::allocateFloatArray(
+    size_t size)
 {
-    float* ptr = nullptr;
+    float* ptr=nullptr;
 
-    cudaMalloc(&ptr,
-               size * sizeof(float));
+    cudaMalloc(
+        &ptr,
+        size*sizeof(float));
 
     return ptr;
 }
 
-unsigned char*
-MemoryManager::allocateByteArray(int size)
-{
-    unsigned char* ptr = nullptr;
-
-    cudaMalloc(&ptr,
-               size * sizeof(unsigned char));
-
-    return ptr;
-}
-
-int*
-MemoryManager::allocateIntArray(int size)
-{
-    int* ptr = nullptr;
-
-    cudaMalloc(&ptr,
-               size * sizeof(int));
-
-    return ptr;
-}
-
-void MemoryManager::freeMemory(void* ptr)
+void
+MemoryManager::freeMemory(
+    void* ptr)
 {
     if(ptr)
         cudaFree(ptr);
 }
 
-void MemoryManager::copyToGPU(
-    void* gpu_ptr,
-    const void* cpu_ptr,
+void
+MemoryManager::copyToGPU(
+    void* gpu,
+    const void* cpu,
     size_t bytes)
 {
     cudaMemcpy(
-        gpu_ptr,
-        cpu_ptr,
+        gpu,
+        cpu,
         bytes,
         cudaMemcpyHostToDevice);
 }
 
-void MemoryManager::copyToCPU(
-    void* cpu_ptr,
-    const void* gpu_ptr,
+void
+MemoryManager::copyToCPU(
+    void* cpu,
+    const void* gpu,
     size_t bytes)
 {
     cudaMemcpy(
-        cpu_ptr,
-        gpu_ptr,
+        cpu,
+        gpu,
         bytes,
         cudaMemcpyDeviceToHost);
 }
 
-void MemoryManager::deviceSynchronize()
+void
+MemoryManager::synchronize()
 {
     cudaDeviceSynchronize();
 }
