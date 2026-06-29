@@ -4,41 +4,65 @@ float* MemoryManager::allocateFloatArray(int size)
 {
     float* ptr = nullptr;
 
-    cudaMalloc(
-        (void**)&ptr,
-        size * sizeof(float));
+    cudaMalloc(&ptr,
+               size * sizeof(float));
 
     return ptr;
 }
 
-void MemoryManager::freeMemory(float* ptr)
+unsigned char*
+MemoryManager::allocateByteArray(int size)
 {
-    if(ptr != nullptr)
-    {
+    unsigned char* ptr = nullptr;
+
+    cudaMalloc(&ptr,
+               size * sizeof(unsigned char));
+
+    return ptr;
+}
+
+int*
+MemoryManager::allocateIntArray(int size)
+{
+    int* ptr = nullptr;
+
+    cudaMalloc(&ptr,
+               size * sizeof(int));
+
+    return ptr;
+}
+
+void MemoryManager::freeMemory(void* ptr)
+{
+    if(ptr)
         cudaFree(ptr);
-    }
 }
 
 void MemoryManager::copyToGPU(
-    float* gpu_ptr,
-    float* cpu_ptr,
-    int size)
+    void* gpu_ptr,
+    const void* cpu_ptr,
+    size_t bytes)
 {
     cudaMemcpy(
         gpu_ptr,
         cpu_ptr,
-        size * sizeof(float),
+        bytes,
         cudaMemcpyHostToDevice);
 }
 
 void MemoryManager::copyToCPU(
-    float* cpu_ptr,
-    float* gpu_ptr,
-    int size)
+    void* cpu_ptr,
+    const void* gpu_ptr,
+    size_t bytes)
 {
     cudaMemcpy(
         cpu_ptr,
         gpu_ptr,
-        size * sizeof(float),
+        bytes,
         cudaMemcpyDeviceToHost);
+}
+
+void MemoryManager::deviceSynchronize()
+{
+    cudaDeviceSynchronize();
 }
