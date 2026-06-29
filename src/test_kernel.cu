@@ -1,4 +1,4 @@
-#include "../include/test_kernel.h"
+#include "test_kernel.h"
 
 #include <cuda_runtime.h>
 
