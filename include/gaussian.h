@@ -1,8 +1,9 @@
 #pragma once
 
-void gaussianBlur(
-    const float* input_image,
-    float* output_image,
+void gaussianBlurCUDA(
+    const float* input,
+    float* output,
     int width,
-    int height
+    int height,
+    float sigma
 );
