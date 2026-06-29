@@ -1,14 +1,45 @@
 #pragma once
 
-// Maximum cameras supported by system
+// ------------------------------------------------------------
+// Camera Configuration
+// ------------------------------------------------------------
+
 constexpr int MAX_CAMERAS = 6;
+constexpr int ACTIVE_CAMERAS = 2;
 
-// SIFT configuration
+// ------------------------------------------------------------
+// Gaussian Pyramid
+// ------------------------------------------------------------
+
 constexpr int NUM_OCTAVES = 4;
-constexpr int SCALES_PER_OCTAVE = 8;
+constexpr int NUM_SCALES  = 8;
 
-// Validated thresholds
-constexpr float CONTRAST_THRESHOLD = 1.0f;
+// ------------------------------------------------------------
+// CUDA
+// ------------------------------------------------------------
 
-constexpr float RANSAC_THRESHOLD = 5.0f;
-constexpr int RANSAC_ITERATIONS = 2000;
+constexpr int BLOCK_SIZE = 16;
+
+// ------------------------------------------------------------
+// Gaussian Kernel
+// ------------------------------------------------------------
+
+constexpr int MAX_KERNEL_RADIUS = 15;
+constexpr int MAX_KERNEL_SIZE = 31;
+
+// ------------------------------------------------------------
+// Sigma Values
+// (Exactly same as CPU)
+// ------------------------------------------------------------
+
+constexpr float SIGMAS[NUM_SCALES] =
+{
+    1.6f,
+    2.0f,
+    2.52f,
+    3.17f,
+    4.0f,
+    5.04f,
+    6.35f,
+    8.0f
+};
