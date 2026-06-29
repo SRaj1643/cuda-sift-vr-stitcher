@@ -14,6 +14,9 @@ int main()
     CameraManager manager;
     manager.active_cameras = 2;
 
+    manager.image_paths[0] = "data/img_1.jpeg";
+    manager.image_paths[1] = "data/img_2.jpeg";
+
     // --------------------------------------------------
     // Create a Small Test Image (8x8)
     // --------------------------------------------------
