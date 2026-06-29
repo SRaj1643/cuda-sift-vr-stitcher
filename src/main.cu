@@ -1,62 +1,116 @@
 #include <iostream>
+
 #include "config.h"
 #include "camera_manager.h"
 #include "memory_manager.h"
-#include "test_kernel.h"
 #include "gaussian.h"
 
 int main()
 {
-    CameraManager manager;
+    // --------------------------------------------------
+    // Camera Manager (Future 6-Camera Architecture)
+    // --------------------------------------------------
 
+    CameraManager manager;
     manager.active_cameras = 2;
 
-    const int SIZE = 10;
+    // --------------------------------------------------
+    // Create a Small Test Image (8x8)
+    // --------------------------------------------------
 
-    float cpu_data[SIZE];
+    const int WIDTH = 8;
+    const int HEIGHT = 8;
+    const int SIZE = WIDTH * HEIGHT;
 
-    for(int i = 0; i < SIZE; i++)
+    float input_image[SIZE];
+
+    for (int i = 0; i < SIZE; i++)
     {
-        cpu_data[i] = i;
+        input_image[i] = static_cast<float>(i);
     }
 
-    float* gpu_data =
+    float output_image[SIZE];
+
+    // --------------------------------------------------
+    // Allocate GPU Memory
+    // --------------------------------------------------
+
+    float* gpu_input =
         MemoryManager::allocateFloatArray(SIZE);
 
+    float* gpu_output =
+        MemoryManager::allocateFloatArray(SIZE);
+
+    // --------------------------------------------------
+    // Copy Image to GPU
+    // --------------------------------------------------
+
     MemoryManager::copyToGPU(
-        gpu_data,
-        cpu_data,
-        SIZE);
+        gpu_input,
+        input_image,
+        SIZE
+    );
 
-    launchMultiplyByTwo(
-    gpu_data,
-    SIZE);
+    // --------------------------------------------------
+    // Launch CUDA Kernel
+    // (Currently Copy Kernel)
+    // --------------------------------------------------
 
-    float cpu_result[SIZE];
+    gaussianBlur(
+        gpu_input,
+        gpu_output,
+        WIDTH,
+        HEIGHT
+    );
+
+    // --------------------------------------------------
+    // Copy Result Back
+    // --------------------------------------------------
 
     MemoryManager::copyToCPU(
-        cpu_result,
-        gpu_data,
-        SIZE);
+        output_image,
+        gpu_output,
+        SIZE
+    );
 
-    std::cout << "Transferred Values:\n";
+    // --------------------------------------------------
+    // Display Input Image
+    // --------------------------------------------------
 
-    for(int i = 0; i < SIZE; i++)
+    std::cout << "\nInput Image\n\n";
+
+    for (int y = 0; y < HEIGHT; y++)
     {
-        std::cout << cpu_result[i] << " ";
+        for (int x = 0; x < WIDTH; x++)
+        {
+            std::cout << input_image[y * WIDTH + x] << "\t";
+        }
+
+        std::cout << std::endl;
     }
 
-    std::cout << std::endl;
+    // --------------------------------------------------
+    // Display Output Image
+    // --------------------------------------------------
 
-    MemoryManager::freeMemory(gpu_data);
-    std::vector<float*> gaussian_pyramid;
+    std::cout << "\nOutput Image\n\n";
 
-   gaussianBlur(
-        nullptr,
-        nullptr,
-        0,
-        0
-    );
+    for (int y = 0; y < HEIGHT; y++)
+    {
+        for (int x = 0; x < WIDTH; x++)
+        {
+            std::cout << output_image[y * WIDTH + x] << "\t";
+        }
+
+        std::cout << std::endl;
+    }
+
+    // --------------------------------------------------
+    // Free GPU Memory
+    // --------------------------------------------------
+
+    MemoryManager::freeMemory(gpu_input);
+    MemoryManager::freeMemory(gpu_output);
 
     return 0;
 }
