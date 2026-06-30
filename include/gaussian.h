@@ -5,31 +5,38 @@
 #include <vector>
 #include <string>
 
-#define NUM_OCTAVES 4
-#define NUM_SCALES 8
+//--------------------------------------------------
+// Gaussian Pyramid Configuration
+//--------------------------------------------------
 
-// Same sigma values as CPU version
+constexpr int NUM_OCTAVES = 4;
+constexpr int NUM_SCALES  = 8;
+
+// Fixed sigma values (same as CPU implementation)
 extern const float SIGMAS[NUM_SCALES];
 
-// ----------------------------------------------------
+//--------------------------------------------------
 // CPU Reference
-// ----------------------------------------------------
+//--------------------------------------------------
+
 std::vector<std::vector<cv::Mat>>
 buildGaussianPyramidCPU(
     const cv::Mat& image
 );
 
-// ----------------------------------------------------
+//--------------------------------------------------
 // CUDA Version
-// ----------------------------------------------------
+//--------------------------------------------------
+
 std::vector<std::vector<cv::Mat>>
 buildGaussianPyramidCUDA(
     const cv::Mat& image
 );
 
-// ----------------------------------------------------
-// Save Pyramid Images
-// ----------------------------------------------------
+//--------------------------------------------------
+// Utility
+//--------------------------------------------------
+
 void saveGaussianPyramid(
     const std::vector<std::vector<cv::Mat>>& pyramid,
     const std::string& outputFolder
