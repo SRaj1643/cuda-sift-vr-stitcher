@@ -1,120 +1,165 @@
 #include <iostream>
+#include <chrono>
+
+#include <opencv2/opencv.hpp>
 
 #include "config.h"
 #include "camera_manager.h"
-#include "memory_manager.h"
 #include "gaussian.h"
+
+using namespace std;
+using namespace std::chrono;
 
 int main()
 {
-    // --------------------------------------------------
-    // Camera Manager (Future 6-Camera Architecture)
-    // --------------------------------------------------
+    //------------------------------------------------------------
+    // Camera Manager
+    //------------------------------------------------------------
 
     CameraManager manager;
+
     manager.active_cameras = 2;
 
     manager.image_paths[0] = "data/img_1.jpeg";
     manager.image_paths[1] = "data/img_2.jpeg";
 
-    // --------------------------------------------------
-    // Create a Small Test Image (8x8)
-    // --------------------------------------------------
+    //------------------------------------------------------------
+    // Load Images
+    //------------------------------------------------------------
 
-    const int WIDTH = 8;
-    const int HEIGHT = 8;
-    const int SIZE = WIDTH * HEIGHT;
+    cv::Mat img1 = cv::imread(
+        manager.image_paths[0],
+        cv::IMREAD_GRAYSCALE
+    );
 
-    float input_image[SIZE];
+    cv::Mat img2 = cv::imread(
+        manager.image_paths[1],
+        cv::IMREAD_GRAYSCALE
+    );
 
-    for (int i = 0; i < SIZE; i++)
+    if(img1.empty() || img2.empty())
     {
-        input_image[i] = static_cast<float>(i);
+        std::cout << "Error loading images." << std::endl;
+        return -1;
     }
 
-    float output_image[SIZE];
+    std::cout << "Images Loaded Successfully\n";
 
-    // --------------------------------------------------
-    // Allocate GPU Memory
-    // --------------------------------------------------
+    //------------------------------------------------------------
+    // CPU Gaussian Pyramid
+    //------------------------------------------------------------
 
-    float* gpu_input =
-        MemoryManager::allocateFloatArray(SIZE);
+    auto cpuStart = high_resolution_clock::now();
 
-    float* gpu_output =
-        MemoryManager::allocateFloatArray(SIZE);
+    auto cpuPyramid =
+        buildGaussianPyramidCPU(img1);
 
-    // --------------------------------------------------
-    // Copy Image to GPU
-    // --------------------------------------------------
+    auto cpuEnd = high_resolution_clock::now();
 
-    MemoryManager::copyToGPU(
-        gpu_input,
-        input_image,
-        SIZE
+    auto cpuTime =
+        duration_cast<milliseconds>(
+            cpuEnd-cpuStart
+        );
+
+    std::cout
+        << "CPU Gaussian Time : "
+        << cpuTime.count()
+        << " ms\n";
+
+    //------------------------------------------------------------
+    // CUDA Gaussian Pyramid
+    //------------------------------------------------------------
+
+    auto gpuStart = high_resolution_clock::now();
+
+    auto gpuPyramid =
+        buildGaussianPyramidCUDA(img1);
+
+    auto gpuEnd = high_resolution_clock::now();
+
+    auto gpuTime =
+        duration_cast<milliseconds>(
+            gpuEnd-gpuStart
+        );
+
+    std::cout
+        << "GPU Gaussian Time : "
+        << gpuTime.count()
+        << " ms\n";
+
+    //------------------------------------------------------------
+    // Save Results
+    //------------------------------------------------------------
+
+    saveGaussianPyramid(
+        cpuPyramid,
+        "results/cpu"
     );
 
-    // --------------------------------------------------
-    // Launch CUDA Kernel
-    // (Currently Copy Kernel)
-    // --------------------------------------------------
-
-    gaussianBlurCUDA(
-        gpu_input,
-        gpu_output,
-        WIDTH,
-        HEIGHT,
-        1.6f
+    saveGaussianPyramid(
+        gpuPyramid,
+        "results/gpu"
     );
 
-    // --------------------------------------------------
-    // Copy Result Back
-    // --------------------------------------------------
+    std::cout
+        << "Gaussian Pyramid Saved Successfully.\n";
 
-    MemoryManager::copyToCPU(
-        output_image,
-        gpu_output,
-        SIZE
-    );
+    //------------------------------------------------------------
+    // Compare CPU and GPU
+    //------------------------------------------------------------
 
-    // --------------------------------------------------
-    // Display Input Image
-    // --------------------------------------------------
+    double totalError = 0.0;
+    double maxError = 0.0;
 
-    std::cout << "\nInput Image\n\n";
+    int totalPixels = 0;
 
-    for (int y = 0; y < HEIGHT; y++)
+    for(int octave=0;octave<NUM_OCTAVES;octave++)
     {
-        for (int x = 0; x < WIDTH; x++)
+        for(int scale=0;scale<NUM_SCALES;scale++)
         {
-            std::cout << input_image[y * WIDTH + x] << "\t";
-        }
+            cv::Mat diff;
 
-        std::cout << std::endl;
+            cv::absdiff(
+                cpuPyramid[octave][scale],
+                gpuPyramid[octave][scale],
+                diff
+            );
+
+            double localMax;
+
+            cv::minMaxLoc(
+                diff,
+                nullptr,
+                &localMax
+            );
+
+            totalError += cv::sum(diff)[0];
+
+            totalPixels += diff.rows*diff.cols;
+
+            if(localMax>maxError)
+                maxError=localMax;
+        }
     }
 
-    // --------------------------------------------------
-    // Display Output Image
-    // --------------------------------------------------
+    std::cout
+        << "Average Absolute Error : "
+        << totalError/totalPixels
+        << std::endl;
 
-    std::cout << "\nOutput Image\n\n";
+    std::cout
+        << "Maximum Error : "
+        << maxError
+        << std::endl;
 
-    for (int y = 0; y < HEIGHT; y++)
-    {
-        for (int x = 0; x < WIDTH; x++)
-        {
-            std::cout << output_image[y * WIDTH + x] << "\t";
-        }
+    //------------------------------------------------------------
+    // Speedup
+    //------------------------------------------------------------
 
-        std::cout << std::endl;
-    }
-
-    // --------------------------------------------------
-    // Free GPU Memory
-    // --------------------------------------------------
-
-    MemoryManager::freeMemory(gpu_input);
-    MemoryManager::freeMemory(gpu_output);
+    std::cout
+        << "Speedup : "
+        << (double)cpuTime.count()/gpuTime.count()
+        << "x\n";
 
     return 0;
 }
