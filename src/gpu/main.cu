@@ -4,8 +4,10 @@
 #include <chrono>
 #include "cuda_kernels.cuh"
 #include "image_utils.cuh"
+#include <opencv2/opencv.hpp>
 #include "gaussian_pyramid.cuh"
 // Global parameters (from CPU version)
+
 #define NUM_OCTAVES 4
 #define NUM_SIGMAS 8
 
@@ -52,15 +54,41 @@ int main(int argc, char** argv) {
     printf("CUDA Gaussian Pyramid Builder\n");
     printf("==============================\n\n");
     
-    // Create synthetic test image (256x256 grayscale)
-    int width = 256;
-    int height = 256;
-    float* h_image = new float[width * height];
+   //------------------------------------------------------
+// Load Input Image
+//------------------------------------------------------
+
+    cv::Mat image = cv::imread(
+        "data/img_1.jpeg",
+        cv::IMREAD_GRAYSCALE
+    );
     
-    // Fill with gradient pattern for testing
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            h_image[y * width + x] = ((float)x + (float)y) / (width + height);
+    if(image.empty())
+    {
+        printf("Failed to load image.\n");
+        return -1;
+    }
+    
+    int width  = image.cols;
+    int height = image.rows;
+    
+    printf("Image Loaded Successfully\n");
+    printf("Width  : %d\n", width);
+    printf("Height : %d\n", height);
+    
+    // Convert uint8 -> float
+    
+    float* h_image =
+        new float[width * height];
+    
+    for(int y=0;y<height;y++)
+    {
+        for(int x=0;x<width;x++)
+        {
+            h_image[
+                y*width+x
+            ] =
+            image.at<uchar>(y,x) / 255.0f;
         }
     }
     
