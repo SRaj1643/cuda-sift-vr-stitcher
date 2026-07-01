@@ -4,7 +4,7 @@
 #include <chrono>
 #include "cuda_kernels.cuh"
 #include "image_utils.cuh"
-
+#include "gaussian_pyramid.cuh"
 // Global parameters (from CPU version)
 #define NUM_OCTAVES 4
 #define NUM_SIGMAS 8
