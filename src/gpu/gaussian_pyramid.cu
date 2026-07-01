@@ -253,6 +253,7 @@ cudaError_t buildGaussianPyramid(
             current_width  = next_width;
             current_height = next_height;
         }
+    }
             //------------------------------------------------------
     // Cleanup Final Octave Base Image
     //------------------------------------------------------
