@@ -7,9 +7,18 @@ set(CMAKE_CUDA_STANDARD 17)
 
 find_package(OpenCV REQUIRED)
 
-file(GLOB_RECURSE PROJECT_SOURCES
-    src/*.cpp
-    src/*.cu
+# --------------------------------------------------
+# Explicit Source Files
+# --------------------------------------------------
+
+set(PROJECT_SOURCES
+
+    src/main.cu
+
+    src/gpu/cuda_kernels.cu
+    src/gpu/gaussian_pyramid.cu
+    src/gpu/image_utils.cu
+
 )
 
 add_executable(cuda_sift
